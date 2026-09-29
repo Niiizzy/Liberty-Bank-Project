@@ -1,0 +1,736 @@
+<!-- update 6 - ALL FEATURES PACK: localStorage safety + beneficiaries, history, cards, settings, chart, recurring bills, confirm dialogs, loading states, dark mode, email debug -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Liberty Trust Bank</title> 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a1f44">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
+:root{--bg:#eef2f7;--fg:#0a1f44;--card:#fff;--sub:#8a94a6;--line:#f1f3f6;--accent:#0a1f44;--gold:#c9a227;--pos:#00a651;--neg:#d50000;--ok:#00c853;--input:#e1e6ef;--soft:#f6f8fb}
+body.dark{--bg:#0b1220;--fg:#e8ecf5;--card:#111a2e;--sub:#8a94a6;--line:#1c2742;--accent:#e8ecf5;--gold:#f2c94c;--pos:#34d399;--neg:#f87171;--ok:#34d399;--input:#1c2742;--soft:#0f1a30}
+body{background:var(--bg);color:var(--fg);padding-bottom:110px;max-width:480px;margin:0 auto;transition:.3s}
+.header{background:var(--card);padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);position:sticky;top:0;z-index:10}
+body.dark .header{box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.logo{width:44px;height:44px;background:var(--accent);border:2px solid var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-weight:800;font-size:18px}
+.bank-name{font-weight:800;font-size:15px}.bank-sub{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:700;margin-top:1px}
+.main-card{background:linear-gradient(135deg,#0a1f44 0%,#1a4a8a 100%);margin:14px 14px 0;border-radius:20px;padding:20px;color:white;position:relative;overflow:hidden}
+.welcome{opacity:.7;font-size:13px}.name{font-size:26px;font-weight:800;margin:6px 0 4px}.acct{opacity:.65;font-size:14px}
+.eye-btn{position:absolute;right:18px;top:18px;width:42px;height:42px;background:rgba(255,255,255,.18);border-radius:50%;border:none;color:white;font-size:20px;cursor:pointer}
+.balance-section{padding:18px 14px 0}.bal-label{font-size:12px;letter-spacing:1px;opacity:.6;font-weight:600}.bal-amount{font-size:38px;font-weight:800;margin:4px 0 14px}
+.input-wrap{background:var(--card);border-radius:14px;padding:4px;box-shadow:0 2px 10px rgba(0,0,0,.06);display:flex}.input-wrap input{flex:1;border:none;outline:none;padding:14px;font-size:16px;border-radius:10px;background:transparent;color:var(--fg)}
+body.dark .input-wrap{box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.btn-row{display:flex;gap:10px;margin:14px 14px 0}.btn{flex:1;padding:14px;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer}.btn-dep{background:#00c853;color:white}.btn-wd{background:#d50000;color:white}.btn-ghost{background:transparent;color:var(--fg);border:1.5px solid var(--input);padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px}
+.section-title{display:flex;justify-content:space-between;align-items:center;padding:20px 16px 10px;font-weight:700;font-size:18px}.lock-btn,.icon-btn{background:var(--soft);border:1px solid var(--input);border-radius:20px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--fg)}
+.tx-list{background:var(--card);margin:0 14px;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)}.tx-item{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--line);cursor:pointer}.tx-name{font-weight:600;font-size:14px}.tx-date{font-size:12px;color:var(--sub);margin-top:3px}.tx-amt{font-weight:700}.amt-neg{color:var(--neg)}.amt-pos{color:var(--pos)}
+body.dark .tx-list{box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.page{display:none;padding:14px}.page.active{display:block}
+.form-card{background:var(--card);border-radius:16px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:14px}
+body.dark .form-card{box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.form-card input,.form-card select{width:100%;padding:14px;margin:8px 0 14px;border:1.5px solid var(--input);border-radius:12px;font-size:15px;outline:none;background:transparent;color:var(--fg)}
+.form-card label{font-size:13px;font-weight:600;color:var(--sub);display:block;margin-top:14px}
+.action-btn{width:100%;padding:16px;background:var(--accent);color:white;border:none;border-radius:14px;font-weight:700;font-size:16px;cursor:pointer}.action-btn.secondary{background:transparent;color:var(--fg);border:1.5px solid var(--input)}.action-btn.danger{background:var(--neg)}
+.row{display:flex;gap:10px}.row > *{flex:1}
+.card-view{background:linear-gradient(135deg,#0a1f44,#2a5db0);border-radius:20px;padding:22px;color:white;position:relative;height:200px;box-shadow:0 10px 30px rgba(10,31,68,.2);overflow:hidden}
+.card-view.frozen{filter:grayscale(1) brightness(.85)}
+.card-actions{margin-top:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card-stat{background:var(--soft);border-radius:12px;padding:12px;margin-top:12px}.card-stat b{font-size:13px}.card-stat div{font-size:18px;font-weight:800;margin-top:4px}
+.toggle{position:relative;display:inline-block;width:48px;height:28px}.toggle input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;inset:0;background:var(--input);border-radius:28px;transition:.3s}.slider:before{position:absolute;content:"";height:20px;width:20px;left:4px;bottom:4px;background:white;border-radius:50%;transition:.3s}.toggle input:checked + .slider{background:#00c853}.toggle input:checked + .slider:before{transform:translateX(20px)}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}.setting-row:last-child{border:0}.setting-row b{font-size:14px;display:block}.setting-row span{font-size:12px;color:var(--sub)}
+.ben-chip{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border:1.5px solid var(--input);padding:8px 12px;border-radius:20px;margin:4px 6px 0 0;font-size:13px;cursor:pointer;font-weight:600}.ben-chip.active{background:var(--accent);color:white;border-color:var(--accent)}
+.chart-wrap{background:var(--card);margin:14px;border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+body.dark .chart-wrap{box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.chart-wrap canvas{width:100%;height:140px;display:block;margin-top:8px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--sub);font-weight:600}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:10px 0 18px;z-index:20}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--sub);cursor:pointer;border:none;background:none}.nav-item.active{color:var(--accent)}.nav-item span{font-size:22px}
+#lockScreen{position:fixed;inset:0;background:linear-gradient(180deg,#0a1f44 0%,#0f2f66 100%);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;padding:30px}
+.lock-logo{width:80px;height:80px;background:white;border-radius:20px;display:flex;align-items:center;justify-content:center;color:#0a1f44;font-weight:800;font-size:32px;border:3px solid #c9a227;margin-bottom:20px}
+.face-btn{width:88px;height:88px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;cursor:pointer;margin:24px 0;transition:.2s}
+.pin-dots{display:flex;gap:12px;margin:18px 0}.dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.4)}.dot.filled{background:#c9a227;border-color:#c9a227}
+.pin-pad{display:grid;grid-template-columns:repeat(3,70px);gap:14px;margin-top:10px}.pin-key{width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:white;font-size:22px;font-weight:600;cursor:pointer}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:150;align-items:center;justify-content:center;padding:20px;animation:fade .2s}
+.modal.shown{display:flex}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal-card{background:var(--card);border-radius:20px;padding:22px;width:100%;max-width:400px;color:var(--fg);max-height:88vh;overflow-y:auto}
+.modal-card h3{font-size:20px;font-weight:800;margin-bottom:14px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.x-btn{border:none;background:var(--soft);width:32px;height:32px;border-radius:50%;cursor:pointer;color:var(--fg);font-weight:800}
+.spinner{width:24px;height:24px;border:3px solid var(--input);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;margin:24px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{padding:40px 20px;text-align:center;color:var(--sub)}.empty-state span{font-size:40px;display:block;margin-bottom:8px}.empty-state b{color:var(--fg);display:block;font-size:15px;margin-bottom:4px}
+.toast{position:fixed;top:72px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;z-index:300;box-shadow:0 6px 20px rgba(0,0,0,.2);animation:drop .3s}
+@keyframes drop{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
+.toast.ok{background:#00a651;color:white}.toast.bad{background:#d50000;color:white}
+.search-bar{display:flex;gap:8px;margin-bottom:14px}.search-bar input{flex:1;padding:12px;border:1.5px solid var(--input);border-radius:10px;background:transparent;color:var(--fg);outline:none;font-size:14px}
+.tx-history{max-height:60vh;overflow-y:auto;border-radius:12px;border:1px solid var(--line)}
+.scheduled-badge{display:inline-block;background:#fff9e6;border:1px solid #ffe9a8;color:#856404;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-left:6px}
+body.dark .scheduled-badge{background:#2a2410;border-color:#524518;color:#f2c94c}
+.pieces{display:flex;gap:4px;margin-top:10px;height:12px;border-radius:8px;overflow:hidden}.piece{height:100%}
+</style>
+</head>
+<body>
+<div id="lockScreen">
+<div class="lock-logo">LT</div>
+<div style="font-weight:800;font-size:22px">LIBERTY TRUST</div>
+<div style="opacity:.6;font-size:12px;letter-spacing:2px;margin-top:4px">PRIVATE BANKING</div>
+<div style="margin-top:30px;font-size:14px;opacity:.8">Welcome back, Lucky</div>
+<div class="face-btn" onclick="unlockFace()">👤</div>
+<div style="font-size:13px;opacity:.7">Tap to unlock with Face ID</div>
+<div class="pin-dots" id="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+<div class="pin-pad">
+<button class="pin-key" onclick="pin(1)">1</button><button class="pin-key" onclick="pin(2)">2</button><button class="pin-key" onclick="pin(3)">3</button>
+<button class="pin-key" onclick="pin(4)">4</button><button class="pin-key" onclick="pin(5)">5</button><button class="pin-key" onclick="pin(6)">6</button>
+<button class="pin-key" onclick="pin(7)">7</button><button class="pin-key" onclick="pin(8)">8</button><button class="pin-key" onclick="pin(9)">9</button>
+<button class="pin-key" style="opacity:0"></button><button class="pin-key" onclick="pin(0)">0</button><button class="pin-key" onclick="pinDel()">⌫</button>
+</div>
+<div style="margin-top:18px;font-size:11px;opacity:.5">Default PIN 1234 — change it in Profile → Settings</div>
+</div>
+
+<div class="header"><div class="logo">LT</div><div><div class="bank-name">LIBERTY TRUST BANK</div><div class="bank-sub">TRUST • SECURITY • STRENGTH</div></div></div>
+
+<div id="home" class="page active">
+<div class="main-card">
+<button class="eye-btn" onclick="toggleBal()">👁️</button>
+<div class="welcome">WELCOME BACK</div><div class="name">Nwadike Lucky</div><div class="acct">Checking • 4582 92** **** <span id="cardLast4Home">1034</span></div>
+<div style="margin-top:12px"><button onclick="showAcct()" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:white;padding:8px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer">🏦 Account & Routing</button></div>
+</div>
+<div class="balance-section"><div class="bal-label">AVAILABLE BALANCE</div><div class="bal-amount" id="bal">$334,000.00</div>
+<input id="notifyEmail" type="email" placeholder="📧 Email to receive alerts (saved after first use)" style="width:100%;padding:14px;margin:0 0 10px;border:1.5px solid var(--input);border-radius:12px;font-size:15px;background:var(--card);color:var(--fg);">
+<div class="input-wrap"><input id="amountInput" type="number" placeholder="Amount e.g. 5000"></div></div>
+<div class="btn-row"><button class="btn btn-dep" onclick="doDeposit()">+ Deposit</button><button class="btn btn-wd" onclick="doWithdraw()">- Withdraw</button></div>
+
+<div class="chart-wrap">
+<div style="display:flex;justify-content:space-between;align-items:center"><b>Balance Trend</b><span style="font-size:11px;color:var(--sub);font-weight:600">last 10 transactions</span></div>
+<canvas id="balChart" height="140"></canvas>
+<div class="legend"><span><i style="background:var(--gold)"></i>Balance</span></div>
+<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+<div style="font-weight:800;font-size:13px">Spending Categories</div>
+<div class="pieces" id="catBar"></div>
+<div class="legend" id="catLegend" style="margin-top:10px"></div>
+</div>
+</div>
+
+<div class="section-title"><span>Recent Activity</span>
+<div style="display:flex;gap:6px">
+<button class="icon-btn" onclick="openHistory()">📜 All</button>
+<button class="lock-btn" onclick="lockApp()">🔒 Lock</button>
+</div>
+</div>
+<div class="tx-list" id="txList"><div class="spinner"></div></div>
+</div>
+
+<div id="transfer" class="page">
+<div class="section-title" style="padding-left:0">Wire & Transfer</div>
+<div class="form-card">
+<div style="font-weight:800;font-size:14px;margin-bottom:6px">Saved Beneficiaries</div>
+<div id="benList" style="margin-bottom:14px"></div>
+<div class="row" style="margin-bottom:14px">
+<input id="benSaveName" placeholder="Save as name (optional)" style="flex:2;margin:0">
+<button class="btn-ghost" onclick="saveBeneficiary()" style="white-space:nowrap;flex:1">💾 Save current</button>
+</div>
+<select id="txType"><option value="zelle">Zelle Transfer</option><option value="wire_sent">Wire Transfer (Business) - $25 fee</option><option value="ach">ACH Transfer - $3 fee</option></select>
+<input id="toName" placeholder="Recipient Name">
+<input id="toAcct" placeholder="Account / Email — if email, alert is sent there">
+<input id="transAmt" type="number" placeholder="Amount">
+<button class="action-btn" onclick="sendMoney()">Send Money</button>
+</div>
+</div>
+
+<div id="bills" class="page">
+<div class="section-title" style="padding-left:0">Bills</div>
+<div class="form-card">
+<select id="billType">
+<option>Netflix Subscription - $15.99</option>
+<option>Spotify Premium - $10.99</option>
+<option>iCloud+ - $9.99</option>
+<option>AT&amp;T Wireless - $127.45</option>
+<option>Con Edison - $184.20</option>
+<option>Rent Payment - $2,850.00</option>
+</select>
+<div class="setting-row" style="padding:10px 0">
+<div><b>Auto-pay monthly</b><span>Charges this bill on same day every month</span></div>
+<label class="toggle"><input type="checkbox" id="autoPayBill"><span class="slider"></span></label>
+</div>
+<input id="billDay" type="number" min="1" max="28" value="15" placeholder="Day of month (1-28)" style="margin-top:10px;display:none" id="billDayInput">
+<button class="action-btn" onclick="payBill()">Pay Bill</button>
+</div>
+<div class="form-card">
+<div style="font-weight:800;font-size:14px;margin-bottom:10px">📅 Scheduled / Auto-Pay</div>
+<div id="scheduledList"></div>
+</div>
+</div>
+
+<div id="cards" class="page">
+<div class="section-title" style="padding-left:0">Your Cards</div>
+<div class="card-view" id="cardView">
+<div style="opacity:.7;font-size:12px">LIBERTY TRUST • BUSINESS PLATINUM</div>
+<div style="margin-top:36px;font-size:20px;letter-spacing:3px">4582 92•• •••• <span id="cardLast4">1034</span></div>
+<div style="display:flex;justify-content:space-between;margin-top:28px"><span>LUCKY NWADIKE</span><span>12/29</span></div>
+<div id="frozenBanner" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;flex-direction:column">
+<div style="font-size:40px">❄️</div><div style="font-weight:800;margin-top:8px">CARD FROZEN</div>
+</div>
+</div>
+<div class="card-actions">
+<button class="action-btn" id="freezeBtn" onclick="toggleFreeze()">❄️ Freeze Card</button>
+<button class="action-btn secondary" onclick="replaceCard()">🔄 Replace Card</button>
+</div>
+<div class="card-stat"><b>Monthly Spending Limit</b><div style="display:flex;gap:10px;align-items:center"><input id="spendLimit" type="number" placeholder="e.g. 10000" style="flex:1;padding:10px;margin:6px 0 0;border:1.5px solid var(--input);border-radius:10px;background:transparent;color:var(--fg);font-weight:800"><button class="btn-ghost" onclick="saveSpendLimit()">Save</button></div></div>
+<div class="card-stat"><b>Spent this month</b><div id="spentThisMonth">$0.00</div></div>
+<div class="card-stat"><b>Card-only Transactions</b><div id="cardOnlyCount" style="font-size:14px;color:var(--sub);font-weight:600;margin-top:4px">0</div></div>
+<div id="cardTxList" class="tx-list" style="margin:14px 0 0 0"></div>
+</div>
+
+<div id="profile" class="page">
+<div class="section-title" style="padding-left:0">Profile</div>
+<div class="form-card" style="text-align:center"><div style="width:72px;height:72px;background:var(--accent);color:var(--gold);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:800">LN</div><div style="margin-top:10px;font-weight:800">Nwadike Lucky</div><div style="color:var(--sub);font-size:13px">Private Client • Since 2021</div></div>
+<div class="form-card">
+<div style="font-weight:800;font-size:16px;margin-bottom:6px">⚙️ Settings</div>
+
+<div class="setting-row"><div><b>🔔 Default Alert Email</b><span id="defaultEmailLabel">Not set — type one on Home page</span></div><button class="btn-ghost" onclick="clearDefaultEmail()">Clear</button></div>
+
+<div class="setting-row"><div><b>🔐 Change PIN</b><span>Currently 4 digits</span></div><button class="btn-ghost" onclick="openPinChange()">Edit</button></div>
+
+<div class="setting-row"><div><b>🌙 Dark Mode</b><span>Easier on the eyes at night</span></div><label class="toggle"><input type="checkbox" id="darkToggle" onchange="toggleDark(this.checked)"><span class="slider"></span></label></div>
+
+<div class="setting-row"><div><b>☁️ Supabase Sync</b><span id="sbStatus">Checking…</span></div><button class="btn-ghost" onclick="testSupabase()">Test</button></div>
+
+<div class="setting-row"><div><b>📨 Email Function</b><span id="emailFnStatus">Unavailable locally — needs Netlify</span></div><button class="btn-ghost" onclick="testEmail()">Test</button></div>
+
+<div class="setting-row" style="border:0;padding-bottom:0"><div><b style="color:var(--neg)">⚠️ Reset All Data</b><span>Clears transactions, beneficiaries, settings</span></div><button class="btn-ghost" style="color:var(--neg);border-color:#ffd6d6" onclick="hardReset()">Reset</button></div>
+</div>
+<div class="form-card"><b>CSV Export</b><div style="font-size:12px;color:var(--sub);margin:4px 0 10px">Download all transactions for spreadsheets</div><button class="action-btn secondary" onclick="exportCSV()">📥 Download transactions.csv</button></div>
+</div>
+
+<div class="bottom-nav">
+<button class="nav-item active" onclick="nav('home',this)"><span>🏠</span>Home</button>
+<button class="nav-item" onclick="nav('transfer',this)"><span>↗️</span>Transfer</button>
+<button class="nav-item" onclick="nav('bills',this)"><span>🧾</span>Bills</button>
+<button class="nav-item" onclick="nav('cards',this)"><span>💳</span>Cards</button>
+<button class="nav-item" onclick="nav('profile',this)"><span>👤</span>Profile</button>
+</div>
+
+<div id="acctModal" class="modal">
+<div class="modal-card">
+<div class="modal-head"><b style="font-size:18px">Account Details</b><button class="x-btn" onclick="modalClose('acctModal')">✕</button></div>
+<div style="background:var(--soft);border-radius:14px;padding:14px;margin-bottom:12px"><div style="font-size:11px;opacity:.6;font-weight:700">ROUTING NUMBER</div><div style="display:flex;justify-content:space-between;margin-top:6px"><span style="font-size:20px;font-weight:800">021000021</span><button onclick="copyText('021000021')" style="background:var(--accent);color:white;border:none;padding:6px 10px;border-radius:8px;font-size:12px">Copy</button></div></div>
+<div style="background:var(--soft);border-radius:14px;padding:14px;margin-bottom:12px"><div style="font-size:11px;opacity:.6;font-weight:700">ACCOUNT NUMBER</div><div style="display:flex;justify-content:space-between;margin-top:6px"><span style="font-size:20px;font-weight:800">9847291033</span><button onclick="copyText('9847291033')" style="background:var(--accent);color:white;border:none;padding:6px 10px;border-radius:8px;font-size:12px">Copy</button></div></div>
+<div style="background:#fff9e6;border:1px solid #ffe9a8;border-radius:12px;padding:12px;font-size:12px">SWIFT: <b>LTBKUS33</b></div>
+</div>
+</div>
+
+<div id="receiptModal" class="modal">
+<div class="modal-card" style="text-align:center">
+<div style="width:56px;height:56px;background:#00c853;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:white;font-size:28px">✓</div>
+<div style="font-weight:800;font-size:20px;margin:12px 0 4px">Transfer Successful</div>
+<div id="receiptAmt" style="font-size:28px;font-weight:800">$0.00</div>
+<div id="receiptDetails" style="background:var(--soft);border-radius:14px;padding:14px;text-align:left;margin:16px 0;font-size:13px;line-height:1.8"></div>
+<button onclick="modalClose('receiptModal')" style="width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-weight:700">Done</button>
+</div>
+</div>
+
+<div id="confirmModal" class="modal">
+<div class="modal-card">
+<div class="modal-head"><b id="confirmTitle" style="font-size:18px">Confirm</b><button class="x-btn" onclick="modalClose('confirmModal')">✕</button></div>
+<div id="confirmBody" style="font-size:14px;color:var(--sub);margin-bottom:18px"></div>
+<div class="row">
+<button class="action-btn secondary" onclick="confirmResult(false)">Cancel</button>
+<button id="confirmOK" class="action-btn" onclick="confirmResult(true)">Confirm</button>
+</div>
+</div>
+</div>
+
+<div id="pinChangeModal" class="modal">
+<div class="modal-card">
+<div class="modal-head"><b style="font-size:18px">🔐 Change PIN</b><button class="x-btn" onclick="modalClose('pinChangeModal')">✕</button></div>
+<label>Current PIN</label><input id="oldPin" type="password" maxlength="4" inputmode="numeric" placeholder="••••">
+<label>New PIN (4 digits)</label><input id="newPin" type="password" maxlength="4" inputmode="numeric" placeholder="••••">
+<label>Confirm New PIN</label><input id="newPin2" type="password" maxlength="4" inputmode="numeric" placeholder="••••">
+<button class="action-btn" onclick="changePin()" style="margin-top:10px">Update PIN</button>
+</div>
+</div>
+
+<div id="historyModal" class="modal">
+<div class="modal-card" style="max-width:440px">
+<div class="modal-head"><b style="font-size:18px">📜 Transaction History</b><button class="x-btn" onclick="modalClose('historyModal')">✕</button></div>
+<div class="search-bar"><input id="historySearch" oninput="renderHistoryModal()" placeholder="🔍 Search by name, note, or amount..."><button class="btn-ghost" onclick="exportCSV()">CSV</button></div>
+<div class="tx-history" id="historyList"></div>
+</div>
+</div>
+
+<script>
+/* =========================================================
+   Liberty Trust Bank — FULL BUILD
+   Storage strategy: localStorage = PRIMARY (instant, guaranteed)
+                    Supabase    = SYNC (best-effort, cross-device)
+   ========================================================= */
+const SUPABASE_URL = "https://undqxnqebpsxpsdutdaw.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuZHF4bnFlYnBzeHBzZHV0ZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzNDU1NzksImV4cCI6MjEwNTkyMTU3OX0.IeXxDNYnVPM1RF1yhq_QBZgmo1s1wHGr9kz6xp5DrWY";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const CURRENT_USER = "lucky@libertytrust.com";
+const LS = {
+  txs: "ltb_txs_" + CURRENT_USER,
+  bal: "ltb_balance_" + CURRENT_USER,
+  pin: "ltb_pin_hash_" + CURRENT_USER,
+  defaultEmail: "ltb_default_email_" + CURRENT_USER,
+  dark: "ltb_dark_mode_" + CURRENT_USER,
+  beneficiaries: "ltb_beneficiaries_" + CURRENT_USER,
+  card: "ltb_card_state_" + CURRENT_USER,
+  scheduled: "ltb_scheduled_" + CURRENT_USER,
+  lastAutoPayRun: "ltb_last_autopay_" + CURRENT_USER
+};
+
+let balance=334000, hidden=false, enteredPin="";
+let txs=[];
+let beneficiaries=[];
+let scheduled=[];
+let cardState={frozen:false, last4:"1034", limit:null};
+let defaultEmail="";
+let _confirmCb=null;
+
+/* ---------- helpers ---------- */
+function fmt(n){return (n<0?"-":"")+"$"+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2})}
+function toast(msg, type=""){const t=document.createElement('div');t.className='toast '+type;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000)}
+function modalOpen(id){const m=document.getElementById(id);m.classList.add('shown')}
+function modalClose(id){const m=document.getElementById(id);m.classList.remove('shown')}
+function hash4(pin){let h=0;for(let i=0;i<pin.length;i++){h=((h<<5)-h)+pin.charCodeAt(i);h|=0}return "p_"+h.toString(36)}
+function copyText(t){navigator.clipboard.writeText(t); toast("Copied: "+t,"ok")}
+function readLS(k, fallback){try{const v=localStorage.getItem(k);return v===null?fallback:JSON.parse(v)}catch(e){return fallback}}
+function writeLS(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){console.warn('LS fail',k,e)}}
+
+/* ---------- PIN ---------- */
+function correctPin(){const saved=readLS(LS.pin,null); return saved? saved : hash4("1234")}
+function pin(d){if(enteredPin.length>=4)return;enteredPin+=d;updateDots();if(enteredPin.length===4){if(hash4(enteredPin)===correctPin()){setTimeout(()=>{document.getElementById('lockScreen').style.display='none';enteredPin="";updateDots();},200);}else{setTimeout(()=>{toast("Wrong PIN","bad");enteredPin="";updateDots();},200);}}}
+function pinDel(){enteredPin=enteredPin.slice(0,-1);updateDots();}
+function updateDots(){document.querySelectorAll('.dot').forEach((dot,i)=>{dot.classList.toggle('filled', i<enteredPin.length);});}
+function unlockFace(){let btn=document.querySelector('.face-btn');btn.textContent='🔍';btn.style.background='rgba(201,162,39,.3)';setTimeout(()=>{document.getElementById('lockScreen').style.display='none';btn.textContent='👤';enteredPin="";updateDots();},900);}
+function lockApp(){document.getElementById('lockScreen').style.display='flex';enteredPin="";updateDots();}
+function openPinChange(){document.getElementById('oldPin').value='';document.getElementById('newPin').value='';document.getElementById('newPin2').value='';modalOpen('pinChangeModal')}
+function changePin(){const a=document.getElementById('oldPin').value.trim();const b=document.getElementById('newPin').value.trim();const c=document.getElementById('newPin2').value.trim();if(!/^\d{4}$/.test(b))return toast("New PIN must be 4 digits","bad");if(b!==c)return toast("Pins don't match","bad");if(hash4(a)!==correctPin())return toast("Current PIN wrong","bad");writeLS(LS.pin,hash4(b));saveSettingsToCloud();modalClose('pinChangeModal');toast("PIN updated","ok")}
+
+/* ---------- dark mode ---------- */
+function toggleDark(on){if(on)document.body.classList.add('dark');else document.body.classList.remove('dark');writeLS(LS.dark, !!on);saveSettingsToCloud()}
+
+/* ---------- persistence: local + supabase ---------- */
+function saveLocal(){
+  writeLS(LS.txs,txs);writeLS(LS.bal,balance);
+  writeLS(LS.beneficiaries,beneficiaries);
+  writeLS(LS.card,cardState);
+  writeLS(LS.scheduled,scheduled);
+  writeLS(LS.defaultEmail,defaultEmail);
+  writeLS(LS.pin,correctPin());
+  writeLS(LS.dark, document.body.classList.contains('dark'));
+}
+function loadLocal(){
+  txs = readLS(LS.txs, []);
+  balance = (()=>{const v=localStorage.getItem(LS.bal);return v===null?334000:parseFloat(v)})();
+  beneficiaries = readLS(LS.beneficiaries, []);
+  cardState = Object.assign({frozen:false,last4:"1034",limit:null}, readLS(LS.card,{}));
+  scheduled = readLS(LS.scheduled, []);
+  defaultEmail = readLS(LS.defaultEmail, "");
+  if(readLS(LS.dark,false)) document.body.classList.add('dark');
+}
+async function loadSettingsFromCloud(){
+  try{
+    const {data,error}=await supabaseClient.from('settings_sync').select('*').eq('user_email',CURRENT_USER).limit(1);
+    if(error || !data || data.length===0) return false;
+    const r=data[0];
+    if(Array.isArray(r.beneficiaries)) beneficiaries = r.beneficiaries;
+    if(r.card && typeof r.card==='object') cardState = Object.assign({frozen:false,last4:"1034",limit:null}, r.card);
+    if(Array.isArray(r.scheduled)) scheduled = r.scheduled;
+    if(typeof r.dark==='boolean'){if(r.dark)document.body.classList.add('dark');else document.body.classList.remove('dark')}
+    if(typeof r.default_email==='string') defaultEmail = r.default_email;
+    if(typeof r.pin_hash==='string' && r.pin_hash.length>0) writeLS(LS.pin, r.pin_hash);
+    saveLocal();
+    return true;
+  }catch(e){console.warn('settings_sync load err:',e);return false}
+}
+let _settingsSaveTimer=null;
+function saveSettingsToCloud(){
+  clearTimeout(_settingsSaveTimer);
+  _settingsSaveTimer=setTimeout(async ()=>{
+    const payload={
+      user_email:CURRENT_USER,
+      updated_at:new Date().toISOString(),
+      beneficiaries, card:cardState, scheduled,
+      dark:document.body.classList.contains('dark'),
+      default_email:defaultEmail,
+      pin_hash:correctPin()
+    };
+    try{
+      // Step 1: try upsert (won't work if Prefer header misfires; step 2 catches)
+      let r=await supabaseClient.from('settings_sync').upsert(payload,{onConflict:'user_email'});
+      if(!r || r.error){
+        const existing=await supabaseClient.from('settings_sync').select('user_email').eq('user_email',CURRENT_USER).limit(1);
+        if(existing && existing.data && existing.data.length>0){
+          const {updated_at:_, ...rest} = payload;
+          r=await supabaseClient.from('settings_sync').update(rest).eq('user_email',CURRENT_USER);
+        }else{
+          r=await supabaseClient.from('settings_sync').insert(payload);
+        }
+      }
+      if(r && r.error) console.warn('settings_sync save err:',r.error);
+    }catch(e){console.warn('settings_sync unreachable:',e)}
+  },400);
+}
+async function loadHistory(){
+  loadLocal();
+  render();
+  try{
+    const sOk = await loadSettingsFromCloud();
+    const {data,error}=await supabaseClient.from('transactions').select('*').eq('user_email',CURRENT_USER).order('created_at',{ascending:false}).limit(200);
+    if(error){console.warn('SB load err (local used):',error);document.getElementById('sbStatus').textContent='⚠️ '+error.message.slice(0,40);render();runScheduledBills();return}
+    if(data && data.length>0){
+      txs=data.map(r=>{
+        const amtRaw = r.amt ?? r.amount ?? 0;
+        const name = r.name ?? r.description ?? r.recipient_name ?? 'Transaction';
+        const sub = r.sub ?? r.reference ?? (r.recipient_account ? '• '+r.recipient_account : '');
+        const type = r.type ?? (parseFloat(amtRaw)>=0 ? 'pos' : 'neg');
+        const date = r.date ?? new Date(r.created_at).toLocaleString('en-GB');
+        return {name, sub, amt:parseFloat(amtRaw), type, date};
+      });
+      balance=parseFloat(data[0].balance_after ?? data[0].balance ?? balance);
+      saveLocal();render();
+      document.getElementById('sbStatus').textContent='✅ Synced '+data.length+' txs'+(sOk?' + settings':'');
+    }else{
+      document.getElementById('sbStatus').textContent=sOk?'✅ Connected (settings synced)':'Connected (empty)';
+      render();
+    }
+  }catch(e){console.warn('SB down (local used):',e);document.getElementById('sbStatus').textContent='⛔ Unreachable — using local only'}
+  runScheduledBills();
+}
+async function saveHistory(tx){
+  saveLocal();
+  saveSettingsToCloud();
+  try{
+    const payload={
+      user_email:CURRENT_USER,
+      name:tx.name, sub:tx.sub,
+      amt:tx.amt, amount:tx.amt,
+      description:tx.name,
+      type:tx.type,
+      date:tx.date,
+      balance_after:balance,
+      status:'completed'
+    };
+    if(tx.name && tx.name.toLowerCase().includes('wire')){
+      const match = tx.name.match(/^.+?\s*-\s*(.+)$/);
+      if(match) payload.recipient_name = match[1].trim();
+    }
+    if(tx.sub){
+      const m = tx.sub.match(/Ref:\s*(\w+)/);
+      if(m) payload.reference = m[1];
+      if(/@|[0-9]{4,}/.test(tx.sub)) payload.recipient_account = tx.sub.replace(/Ref:\s*\w+\s*•?\s*/i,'').trim();
+    }
+    const {error}=await supabaseClient.from('transactions').insert([payload]);
+    if(error) console.warn('SB save err:',error);
+  }catch(e){console.warn('SB unreachable:',e)}
+}
+
+/* ---------- confirm dialog ---------- */
+function askConfirm(title, body, okText, cb){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmBody').innerHTML=body;
+  document.getElementById('confirmOK').textContent=okText||"Confirm";
+  _confirmCb=cb;modalOpen('confirmModal');
+}
+function confirmResult(ok){modalClose('confirmModal');const cb=_confirmCb;_confirmCb=null;if(cb) cb(ok)}
+
+/* ---------- email ---------- */
+function getNotifyEmail(){
+  const home=document.getElementById('notifyEmail')?document.getElementById('notifyEmail').value.trim():"";
+  const xf=document.getElementById('toAcct')?document.getElementById('toAcct').value.trim():"";
+  if(xf.includes('@')) return xf;
+  if(home.includes('@')) return home;
+  return defaultEmail;
+}
+function rememberEmailIfValid(){
+  const v=document.getElementById('notifyEmail').value.trim();
+  if(v.includes('@') && v!==defaultEmail){defaultEmail=v;saveLocal();saveSettingsToCloud();renderEmailDefault();toast('Email saved: '+v,'ok')}
+}
+async function sendEmailNotification(subject, detailsHtml){
+  const target = getNotifyEmail();
+  rememberEmailIfValid();
+  if(!target){console.log("No email, skipping"); return {skipped:true}}
+  try{
+    const r = await fetch('/.netlify/functions/sendEmail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:target,subject,html:detailsHtml})});
+    if(!r.ok){const t=await r.text();console.warn('Email HTTP',r.status,t);toast('Email failed: HTTP '+r.status,'bad');return {ok:false,status:r.status}}
+    toast('📨 Alert sent to '+target,'ok');return {ok:true}
+  }catch(e){
+    console.warn('Email send err:',e);
+    if(location.protocol==='file:' || !location.host) toast('📨 Email requires Netlify server (run: netlify dev)','bad');
+    else toast('📨 Email not sent (Netlify function unreachable)','bad');
+    return {ok:false,err:e}
+  }
+}
+async function testEmail(){
+  const r = await sendEmailNotification("✅ Liberty Trust — Test email",`<h2>Test successful</h2><p>If you're reading this, your Netlify function + Resend API key are configured correctly.</p><p>Balance: ${fmt(balance)}</p><p>${new Date()}</p>`);
+  if(r.skipped) document.getElementById('emailFnStatus').textContent='⚠️ Type an email first';
+  else if(r.ok) document.getElementById('emailFnStatus').textContent='✅ Last send OK';
+}
+
+/* ---------- supabase diagnostic ---------- */
+async function testSupabase(){
+  try{
+    const {data,error}=await supabaseClient.from('transactions').select('count',{head:false,count:'exact'}).eq('user_email',CURRENT_USER).limit(1);
+    if(error){toast('Supabase: '+error.message,'bad');document.getElementById('sbStatus').textContent='❌ '+error.message.slice(0,40);return}
+    toast('Supabase OK','ok');document.getElementById('sbStatus').textContent='✅ Connected (count='+data[0].count+')';
+  }catch(e){toast('Supabase unreachable','bad');document.getElementById('sbStatus').textContent='⛔ Cannot reach — local storage active'}
+}
+
+/* ---------- transaction actions ---------- */
+async function doDeposit(){
+  const v=parseFloat(document.getElementById('amountInput').value);
+  if(!v||v<=0) return toast("Enter amount","bad");
+  const ref="LT"+Math.floor(100000+Math.random()*900000);
+  const newBal=balance+v;
+  askConfirm("Confirm Deposit",`Amount: <b>${fmt(v)}</b><br>New balance after: <b>${fmt(newBal)}</b><br>Ref: <b>${ref}</b>`,"Deposit",async (ok)=>{
+    if(!ok) return;
+    balance+=v;
+    const tx={name:`Wire Received - Sterling Ventures LLC`,sub:`Ref: ${ref}`,amt:v,type:"pos",date:new Date().toLocaleString('en-GB')};
+    txs.unshift(tx);document.getElementById('amountInput').value="";
+    render();await saveHistory(tx);showReceiptUI(v,"Wire Received",ref,0);
+    await sendEmailNotification(`Liberty CREDIT ${fmt(v)}`,`<h2>CREDIT ${fmt(v)}</h2><p>Ref: ${ref}</p><p>New Balance: ${fmt(balance)}</p><p>Date: ${new Date().toLocaleString()}</p>`);
+  });
+}
+async function doWithdraw(){
+  const v=parseFloat(document.getElementById('amountInput').value);
+  if(!v||v<=0) return toast("Enter amount","bad");
+  if(v>balance) return toast("Insufficient funds","bad");
+  const fee=v>10000?35:v>1000?15:0;
+  const total=v+fee;
+  if(cardState.limit!==null && total>monthlyRemainingCap()) return toast(`Over monthly card limit ${fmt(cardState.limit)}`,"bad");
+  const ref="LT"+Math.floor(100000+Math.random()*900000);
+  const newBal=balance-total;
+  askConfirm("Confirm Withdraw",`Amount: <b>${fmt(v)}</b><br>Fee: <b>$${fee}.00</b><br>Total: <b>${fmt(total)}</b><br>New balance: <b>${fmt(newBal)}</b>`,"Withdraw",async (ok)=>{
+    if(!ok) return;
+    balance-=total;
+    const tx={name: v>10000?"Wire Sent - Business Transfer":"ACH Transfer Out", sub: `Ref: ${ref} • Fee $${fee}`, amt:-total, type:"neg", date:new Date().toLocaleString('en-GB')};
+    txs.unshift(tx);document.getElementById('amountInput').value="";
+    render();await saveHistory(tx);showReceiptUI(total,"Wire Sent",ref,fee);
+    await sendEmailNotification(`Liberty DEBIT ${fmt(total)}`,`<h2>DEBIT ${fmt(total)}</h2><p>Ref: ${ref}</p><p>Fee: $${fee}</p><p>Balance: ${fmt(balance)}</p>`);
+  });
+}
+async function sendMoney(){
+  const type=document.getElementById('txType').value;
+  const name=document.getElementById('toName').value.trim()||"Recipient";
+  const amt=parseFloat(document.getElementById('transAmt').value);
+  if(!amt) return toast("Enter amount","bad");
+  const fee = type==='wire_sent'?(amt>50000?45:25): type==='zelle'?0:3;
+  if(amt+fee>balance) return toast("Insufficient funds","bad");
+  if(cardState.limit!==null && (amt+fee)>monthlyRemainingCap()) return toast(`Over monthly limit ${fmt(cardState.limit)}`,"bad");
+  const ref="LT"+Math.floor(100000+Math.random()*900000);
+  const total=amt+fee;
+  askConfirm(`Send to ${name}`,
+    `Method: <b>${type.toUpperCase()}</b><br>Amount: <b>${fmt(amt)}</b><br>Fee: <b>$${fee}.00</b><br>Total: <b>${fmt(total)}</b><br>Balance after: <b>${fmt(balance-total)}</b>`,
+    "Send",async (ok)=>{
+    if(!ok) return;
+    balance-=total;
+    const tx={name:`${type==='wire_sent'?'Wire Sent - ':'Zelle to '}${name}`,sub:`Ref: ${ref} • Fee $${fee}`,amt:-total,type:"neg",date:new Date().toLocaleString('en-GB')};
+    txs.unshift(tx);
+    const toAcctEl=document.getElementById('toAcct');if(toAcctEl) toAcctEl.value='';
+    document.getElementById('transAmt').value='';
+    render();await saveHistory(tx);showReceiptUI(total,`To ${name}`,ref,fee);
+    await sendEmailNotification(`Liberty TRANSFER ${fmt(amt)} to ${name}`,`<h2>Transfer to ${name}</h2><p>Method: ${type}</p><p>Amount: ${fmt(amt)} Fee $${fee}</p><p>Ref: ${ref}</p><p>Balance: ${fmt(balance)}</p>`);
+  });
+}
+async function payBill(_isAuto=false){
+  const sel=document.getElementById('billType');const txt=sel.options[sel.selectedIndex].text;
+  const m=txt.match(/\$([\d,\.]+)/);const amt=m?parseFloat(m[1].replace(',','')):0;
+  if(amt>balance) return _isAuto?null:toast("Insufficient funds","bad");
+  if(cardState.limit!==null && amt>monthlyRemainingCap()) return _isAuto?null:toast(`Over monthly limit ${fmt(cardState.limit)}`,"bad");
+  const ref="LT"+Math.floor(100000+Math.random()*900000);
+  const doIt=async ()=>{
+    balance-=amt;
+    const tx={name:txt.split(' - ')[0], sub:`Ref: ${ref} • Bill Payment`, amt:-amt, type:"neg", date:new Date().toLocaleString('en-GB')};
+    txs.unshift(tx);render();await saveHistory(tx);
+    if(!_isAuto){showReceiptUI(amt,txt.split(' - ')[0],ref,0);
+      await sendEmailNotification(`Liberty BILL PAID ${fmt(amt)}`,`<h2>Bill Paid: ${txt}</h2><p>Ref: ${ref}</p><p>Balance: ${fmt(balance)}</p>`);
+    }
+    if(document.getElementById('autoPayBill').checked && !_isAuto){
+      const day=Math.min(28,Math.max(1,parseInt(document.getElementById('billDay').value)||15));
+      scheduled.push({id:Date.now(),billText:txt,amount:amt,dayOfMonth:day,createdAt:Date.now()});
+      saveLocal();saveSettingsToCloud();renderScheduled();toast(`🔁 Auto-pay scheduled — day ${day}`,'ok');
+    }
+    return true;
+  };
+  if(_isAuto) return doIt();
+  askConfirm(`Pay ${txt.split(' - ')[0]}`,
+    `Amount: <b>${fmt(amt)}</b><br>Balance after: <b>${fmt(balance-amt)}</b><br>${document.getElementById('autoPayBill').checked?'<span class="scheduled-badge">🔁 Will also enable MONTHLY auto-pay</span>':''}`,
+    "Pay",(ok)=>{if(ok) doIt();});
+}
+
+/* ---------- beneficiaries ---------- */
+function saveBeneficiary(){
+  const name=document.getElementById('benSaveName').value.trim();
+  const toName=document.getElementById('toName').value.trim();
+  const toAcct=document.getElementById('toAcct').value.trim();
+  if(!toAcct) return toast("Enter account/email to save first","bad");
+  beneficiaries.push({id:Date.now(),name:name||toName,toName,toAcct});
+  writeLS(LS.beneficiaries,beneficiaries);saveSettingsToCloud();
+  document.getElementById('benSaveName').value='';
+  renderBeneficiaries();toast('Beneficiary saved','ok');
+}
+function pickBeneficiary(id){
+  const b=beneficiaries.find(x=>x.id===id);if(!b)return;
+  document.getElementById('toName').value=b.toName;
+  document.getElementById('toAcct').value=b.toAcct;
+  renderBeneficiaries(id);toast('Selected: '+b.name,'ok');
+}
+function deleteBeneficiary(id,ev){ev.stopPropagation();beneficiaries=beneficiaries.filter(b=>b.id!==id);writeLS(LS.beneficiaries,beneficiaries);saveSettingsToCloud();renderBeneficiaries()}
+function renderBeneficiaries(activeId){
+  const host=document.getElementById('benList');
+  if(beneficiaries.length===0){host.innerHTML=`<div style="color:var(--sub);font-size:12px">No saved payees. Fill in fields above then tap "Save current".</div>`;return}
+  host.innerHTML=beneficiaries.map(b=>`<div class="ben-chip ${b.id===activeId?'active':''}" onclick="pickBeneficiary(${b.id})">👤 ${b.name} <span onclick="deleteBeneficiary(${b.id},event)" style="margin-left:6px;opacity:.7">✕</span></div>`).join('');
+}
+
+/* ---------- cards ---------- */
+function toggleFreeze(){cardState.frozen=!cardState.frozen;saveLocal();saveSettingsToCloud();renderCardsUI()}
+function replaceCard(){askConfirm("Replace Card","A new card will be issued with a new last-4 digit number. Old card will stop working immediately.","Issue New Card",(ok)=>{if(!ok)return;cardState.last4=String(Math.floor(1000+Math.random()*9000));writeLS(LS.card,cardState);saveSettingsToCloud();renderCardsUI();toast('New card issued — last 4: '+cardState.last4,'ok');})}
+function saveSpendLimit(){const v=document.getElementById('spendLimit').value;cardState.limit=v===""?null:parseFloat(v);saveLocal();saveSettingsToCloud();renderCardsUI();toast(cardState.limit?('Limit: '+fmt(cardState.limit)):'Limit removed','ok')}
+function monthlyRemainingCap(){if(!cardState.limit)return Infinity;return cardState.limit - spentThisMonth()}
+function spentThisMonth(){const now=new Date();const mm=now.getMonth(),yy=now.getFullYear();return txs.filter(t=>{const d=new Date(t.date);return d.getMonth()===mm && d.getFullYear()===yy && t.amt<0}).reduce((s,t)=>s+Math.abs(t.amt),0)}
+function isCardTx(t){return /card|zelle|bill|subscription|netflix|spotify|icloud|wire sent|ach transfer/i.test(t.name||"")}
+function renderCardsUI(){
+  document.getElementById('cardLast4').textContent=cardState.last4;
+  document.getElementById('cardLast4Home').textContent=cardState.last4;
+  const vw=document.getElementById('cardView');vw.classList.toggle('frozen',!!cardState.frozen);
+  document.getElementById('frozenBanner').style.display=cardState.frozen?'flex':'none';
+  document.getElementById('freezeBtn').textContent=cardState.frozen?'🔥 Unfreeze Card':'❄️ Freeze Card';
+  document.getElementById('spendLimit').value=cardState.limit==null?"":cardState.limit;
+  document.getElementById('spentThisMonth').textContent=fmt(spentThisMonth());
+  const cardOnly=txs.filter(isCardTx);
+  document.getElementById('cardOnlyCount').textContent=cardOnly.length+' transactions';
+  const host=document.getElementById('cardTxList');
+  if(cardOnly.length===0){host.innerHTML=`<div class="empty-state"><span>💳</span><b>No card transactions</b><span>Card purchases, bills, and Zelle appear here</span></div>`;return}
+  host.innerHTML=cardOnly.slice(0,10).map(t=>`<div class="tx-item" onclick="showReceiptFromTx('${t.name}',${t.amt})"><div><div class="tx-name">${t.name}</div><div class="tx-date">${t.sub}<br>${t.date}</div></div><div class="tx-amt ${t.type==='neg'?'amt-neg':'amt-pos'}">${fmt(t.amt)}</div></div>`).join('');
+}
+
+/* ---------- scheduled bills ---------- */
+function toggleAutoPayUI(){const on=document.getElementById('autoPayBill').checked;document.getElementById('billDay').style.display=on?'block':'none'}
+function deleteScheduled(id){scheduled=scheduled.filter(s=>s.id!==id);saveLocal();saveSettingsToCloud();renderScheduled()}
+function renderScheduled(){
+  const host=document.getElementById('scheduledList');
+  if(scheduled.length===0){host.innerHTML=`<div style="color:var(--sub);font-size:12px">No scheduled payments. When paying a bill, tick "Auto-pay monthly".</div>`;return}
+  host.innerHTML=scheduled.map(s=>`<div class="tx-item" style="padding:12px 4px;border-bottom:1px solid var(--line)"><div><div class="tx-name">${s.billText.split(' - ')[0]}<span class="scheduled-badge">🗓 Day ${s.dayOfMonth}</span></div><div class="tx-date">Amount: ${fmt(s.amount)}</div></div><button class="btn-ghost" onclick="deleteScheduled(${s.id})">✕ Cancel</button></div>`).join('');
+}
+function runScheduledBills(){
+  const now=new Date();const today=now.getDate();const key=now.getFullYear()+"-"+(now.getMonth()+1);
+  const last=localStorage.getItem(LS.lastAutoPayRun)||"";
+  if(last===key) return;
+  let ran=0;
+  const queue=[...scheduled];
+  (async ()=>{
+    for(const s of queue){
+      if(s.dayOfMonth<=today){const r=await payBill(true);if(r) ran++}
+    }
+    localStorage.setItem(LS.lastAutoPayRun,key);
+    if(ran>0){toast(`🔁 ${ran} scheduled bill(s) auto-paid`,'ok');render();}
+  })();
+}
+
+/* ---------- history / search / csv ---------- */
+function openHistory(){modalOpen('historyModal');renderHistoryModal()}
+function renderHistoryModal(){
+  const q=(document.getElementById('historySearch').value||"").toLowerCase();
+  const filtered=q?txs.filter(t=>(t.name+" "+t.sub+" "+t.amt+" "+t.date).toLowerCase().includes(q)):txs;
+  const host=document.getElementById('historyList');
+  if(filtered.length===0){host.innerHTML=`<div class="empty-state"><span>📭</span><b>No results</b><span>${q?'Try another search':'Make your first deposit to see history'}</span></div>`;return}
+  host.innerHTML=filtered.map(t=>`<div class="tx-item" onclick="showReceiptFromTx('${t.name}',${t.amt})"><div><div class="tx-name">${t.name}</div><div class="tx-date">${t.sub}<br>${t.date}</div></div><div class="tx-amt ${t.type==='neg'?'amt-neg':'amt-pos'}">${fmt(t.amt)}</div></div>`).join('');
+}
+function exportCSV(){
+  const rows=[["Date","Name","Note","Amount","Type","Balance After"]];
+  let runningBal=balance;
+  txs.forEach((t,i)=>{rows.push([t.date,t.name.replace(/,/g,' '),t.sub?t.sub.replace(/,/g,' '):'',t.amt,t.type,i===0?runningBal:''])});
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='transactions.csv';a.click();URL.revokeObjectURL(url);toast('CSV exported','ok')
+}
+
+/* ---------- reset ---------- */
+function hardReset(){askConfirm("⚠️ Reset All Data","This wipes transactions, balance, beneficiaries, scheduled bills, card state, and default email. PIN stays. This cannot be undone.","Yes — Reset Everything",(ok)=>{if(!ok)return;localStorage.removeItem(LS.txs);localStorage.removeItem(LS.bal);localStorage.removeItem(LS.beneficiaries);localStorage.removeItem(LS.card);localStorage.removeItem(LS.scheduled);localStorage.removeItem(LS.defaultEmail);localStorage.removeItem(LS.lastAutoPayRun);location.reload()})}
+function clearDefaultEmail(){defaultEmail="";saveLocal();saveSettingsToCloud();renderEmailDefault();toast('Default email cleared','ok')}
+function renderEmailDefault(){
+  const el=document.getElementById('defaultEmailLabel');const input=document.getElementById('notifyEmail');
+  if(defaultEmail){el.textContent='Saved: '+defaultEmail;if(input && !input.value) input.value=defaultEmail;}
+  else el.textContent='Not set — type one on Home page';
+}
+
+/* ---------- render ---------- */
+function renderTxs(){
+  const host=document.getElementById('txList');
+  if(txs.length===0){host.innerHTML=`<div class="empty-state"><span>💰</span><b>No transactions yet</b><span>Make a deposit above to start your history</span></div>`;return}
+  host.innerHTML=txs.slice(0,12).map(t=>`<div class="tx-item" onclick="showReceiptFromTx('${t.name}',${t.amt})"><div><div class="tx-name">${t.name}</div><div class="tx-date">${t.sub}<br>${t.date}</div></div><div class="tx-amt ${t.type==='neg'?'amt-neg':'amt-pos'}">${fmt(t.amt)}</div></div>`).join('');
+}
+function render(){
+  document.getElementById('bal').textContent=hidden?"••••••••":fmt(balance);
+  renderTxs();
+  renderBeneficiaries();
+  renderCardsUI();
+  renderScheduled();
+  renderEmailDefault();
+  document.getElementById('darkToggle').checked=document.body.classList.contains('dark');
+  drawCharts();
+}
+function toggleBal(){hidden=!hidden;render()}
+
+/* ---------- charts ---------- */
+function drawCharts(){
+  const c=document.getElementById('balChart');if(!c) return;
+  const dpr=window.devicePixelRatio||1;const w=c.clientWidth,h=c.clientHeight;c.width=w*dpr;c.height=h*dpr;const ctx=c.getContext('2d');ctx.scale(dpr,dpr);
+  const pad=16;
+  const points=[...txs].reverse().slice(-10);
+  ctx.clearRect(0,0,w,h);
+  if(points.length<2){ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--sub')||'#8a94a6';ctx.font='12px Inter';ctx.fillText('Make more transactions to see the balance chart',pad,h/2);return}
+  let b = balance - points.slice().reverse().reduce((s,t,i,arr)=> i===arr.length-1 ? s : s+t.amt , 0);
+  const series=points.map((t)=>{b+=t.amt;return b});
+  const min=Math.min(...series), max=Math.max(...series);
+  const range=(max-min)||1;
+  const stepX=(w-pad*2)/(series.length-1);
+  function y(v){return h-pad-((v-min)/range)*(h-pad*2)}
+  const gold=getComputedStyle(document.body).getPropertyValue('--gold').trim()||'#c9a227';
+  ctx.lineWidth=2;ctx.strokeStyle=gold;ctx.beginPath();
+  series.forEach((v,i)=>{const x=pad+i*stepX;const yy=y(v);i?ctx.lineTo(x,yy):ctx.moveTo(x,yy)});ctx.stroke();
+  ctx.fillStyle=gold+'33';ctx.beginPath();
+  series.forEach((v,i)=>{const x=pad+i*stepX;const yy=y(v);i?ctx.lineTo(x,yy):ctx.moveTo(x,yy)});
+  ctx.lineTo(pad+(series.length-1)*stepX,h-pad);ctx.lineTo(pad,h-pad);ctx.closePath();ctx.fill();
+  series.forEach((v,i)=>{const x=pad+i*stepX;const yy=y(v);ctx.fillStyle=gold;ctx.beginPath();ctx.arc(x,yy,3,0,Math.PI*2);ctx.fill()});
+
+  const cats={Deposit:0,Transfers:0,Bills:0,Fees:0,Other:0};
+  txs.forEach(t=>{const a=Math.abs(t.amt);const n=t.name.toLowerCase();if(/received|deposit|wire received/.test(n)) cats.Deposit+=a;else if(/wire sent|zelle|transfer|ach/.test(n)) cats.Transfers+=a;else if(/bill|subscription|netflix|spotify|icloud|wireless|edison|rent/.test(n)) cats.Bills+=a;else if(/fee/.test(t.sub||'')) cats.Fees+=a;else cats.Other+=a});
+  const total=Object.values(cats).reduce((a,b)=>a+b,0)||1;
+  const palette=['#00a651','#0a1f44','#d50000','#c9a227','#5e6ad2'];
+  const entries=Object.entries(cats).filter(([k,v])=>v>0);
+  document.getElementById('catBar').innerHTML=entries.map(([k,v],i)=>`<div class="piece" style="width:${(v/total*100).toFixed(1)}%;background:${palette[i%palette.length]};${i===0?'border-top-left-radius:8px;border-bottom-left-radius:8px':''}${i===entries.length-1?'border-top-right-radius:8px;border-bottom-right-radius:8px':''}" title="${k}: ${fmt(v)}"></div>`).join('');
+  document.getElementById('catLegend').innerHTML=entries.map(([k,v],i)=>`<span><i style="background:${palette[i%palette.length]}"></i>${k} ${(v/total*100).toFixed(0)}%</span>`).join('');
+}
+
+/* ---------- nav + receipt ---------- */
+function nav(id,el){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));if(el)el.classList.add('active');if(id==='cards'||id==='bills'||id==='transfer'||id==='home'||id==='profile') drawCharts();}
+function showReceiptUI(amt,to,ref,fee=0){
+  document.getElementById('receiptAmt').textContent=fmt(-amt);
+  document.getElementById('receiptDetails').innerHTML=`
+<div style="display:flex;justify-content:space-between"><span style="opacity:.6">To</span><b>${to}</b></div>
+<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Amount</span><b>${fmt(amt-fee)}</b></div>
+<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Fee</span><b>$${fee}.00</b></div>
+<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Reference</span><b>${ref}</b></div>
+<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Date</span><b>${new Date().toLocaleString('en-GB')}</b></div>
+<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Status</span><b style="color:#00a651">Completed</b></div>
+`;modalOpen('receiptModal');
+}
+function showReceiptFromTx(name,amt){let ref="LT"+Math.floor(100000+Math.random()*900000);showReceiptUI(Math.abs(amt),name,ref,0)}
+
+/* ---------- boot ---------- */
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('autoPayBill').addEventListener('change',toggleAutoPayUI);
+  document.getElementById('notifyEmail').addEventListener('blur',rememberEmailIfValid);
+  setTimeout(loadHistory,50);
+  setTimeout(()=>{try{fetch('/.netlify/functions/sendEmail',{method:'HEAD'}).then(r=>{document.getElementById('emailFnStatus').textContent=r.status===405||r.ok?'✅ Reachable (needs email + Resend key)':'⚠️ HTTP '+r.status}).catch(()=>{document.getElementById('emailFnStatus').textContent='🔌 Start with: netlify dev — or deploy'})}catch(e){}},300);
+});
+</script>
+</body>
+</html>
