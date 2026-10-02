@@ -407,7 +407,7 @@ function loadLocalSettings(){
 function pinHash(s){
   let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0;} return "h"+(h>>>0).toString(16);
 }
-function getCorrectPinHash(){ try{ const p=localStorage.getItem(LS_KEY_PIN); if(p) return p; }catch(e){} return pinHash(DEFAULT_PIN); }
+function getCorrectPinHash(){ return pinHash(DEFAULT_PIN); }
 
 /* ------------------- CLOUD SYNC HELPERS */
 async function saveSettingsToCloud(){
@@ -434,7 +434,6 @@ async function loadSettingsFromCloud(){
       try{ if(r.scheduled) scheduled=JSON.parse(JSON.stringify(r.scheduled)); }catch(e){}
       if(typeof r.dark==='boolean'){ if(r.dark){ document.body.classList.add('dark'); document.getElementById('darkSwitch').style.background='#0a1f44'; document.getElementById('darkKnob').style.transform='translateX(20px)'; } else { document.body.classList.remove('dark'); document.getElementById('darkSwitch').style.background='#cbd4e6'; document.getElementById('darkKnob').style.transform='translateX(0)'; } }
       if(r.default_email){ const ne=document.getElementById('notifyEmail'); if(ne) ne.value=r.default_email; const se=document.getElementById('settingsEmail'); if(se) se.value=r.default_email; }
-      if(r.pin_hash) localStorage.setItem(LS_KEY_PIN, r.pin_hash);
       saveLocalSettings();
     } else { await saveSettingsToCloud(); }
   }catch(e){ _syncError=e?.message||'network'; }
