@@ -11,8 +11,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}
-body{background:#eef2f7;color:#0a1f44;padding-bottom:90px;max-width:480px;margin:0 auto;transition:background .3s,color .3s}
-body.dark{background:#0b1220;color:#e8ecf6}
+body{background: radial-gradient(circle at 15% 0%, rgba(10,31,68,.05), transparent 40%), radial-gradient(circle at 100% 15%, rgba(201,162,39,.06), transparent 35%), repeating-linear-gradient(135deg, rgba(10,31,68,.02) 0px, rgba(10,31,68,.02) 1px, transparent 1px, transparent 14px), #eef2f7;color:#0a1f44;padding-bottom:90px;max-width:480px;margin:0 auto;transition:background .3s,color .3s}
+body.dark{background: radial-gradient(circle at 15% 0%, rgba(201,162,39,.08), transparent 40%), radial-gradient(circle at 100% 15%, rgba(42,93,176,.18), transparent 35%), repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 1px, transparent 14px), #0b1220;color:#e8ecf6}
 body.dark .header{background:#141d35;box-shadow:0 1px 3px rgba(0,0,0,.4)}
 body.dark .bank-name{color:#fff}
 body.dark .main-card{background:linear-gradient(135deg,#0c1e40 0%,#1e4a8a 100%)}
@@ -50,9 +50,18 @@ body.dark #searchInput{background:#0f1730;border:1.5px solid #253258;color:#fff}
 .tx-list{background:white;margin:0 14px;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)}.tx-item{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid #f1f3f6;cursor:pointer}.tx-name{font-weight:600;font-size:14px}.tx-date{font-size:12px;color:#8a94a6;margin-top:3px}.tx-amt{font-weight:700}.amt-neg{color:#d50000}.amt-pos{color:#00a651}
 .page{display:none;padding:14px}.page.active{display:block}
 .form-card{background:white;border-radius:16px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.06)}.form-card input,.form-card select{width:100%;padding:14px;margin:8px 0 14px;border:1.5px solid #e1e6ef;border-radius:12px;font-size:15px;outline:none}.action-btn{width:100%;padding:16px;background:#0a1f44;color:white;border:none;border-radius:14px;font-weight:700;font-size:16px;cursor:pointer}
-.card-view{background:linear-gradient(135deg,#0a1f44,#2a5db0);border-radius:20px;padding:22px;color:white;position:relative;height:210px}
+.card-view{background:linear-gradient(135deg,#0a1f44 0%,#123a73 45%,#2a5db0 100%);border-radius:22px;padding:24px;color:white;position:relative;height:210px;overflow:hidden;box-shadow:0 14px 34px rgba(10,31,68,.4), inset 0 1px 0 rgba(255,255,255,.08)}
+.card-view::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px);background-size:14px 14px;z-index:0}
+.card-view::after{content:"";position:absolute;top:-55%;right:-25%;width:240px;height:240px;background:radial-gradient(circle,rgba(201,162,39,.3),transparent 70%);border-radius:50%;z-index:0}
 .card-view.frozen{filter:grayscale(.6);opacity:.75}
-.card-chip{background:#c9a227;width:42px;height:32px;border-radius:6px;margin-top:12px}
+.card-content{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+.card-chip{background:linear-gradient(135deg,#f6e6ae,#c9a227 55%,#8a6d1a);width:46px;height:34px;border-radius:7px;margin-top:14px;position:relative;box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
+.card-chip::before{content:"";position:absolute;inset:4px;border:1px solid rgba(0,0,0,.25);border-radius:4px}
+.card-contactless{position:absolute;top:0;right:0;width:24px;height:24px;opacity:.85}
+.card-number{margin-top:22px;font-size:20px;letter-spacing:3px;font-family:'Courier New',monospace;font-weight:600}
+.card-bottom-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto}
+.card-label{font-size:9px;opacity:.6;letter-spacing:1.5px;margin-bottom:3px}
+.card-mark{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;letter-spacing:1px}
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:white;border-top:1px solid #e1e6ef;display:flex;justify-content:space-around;padding:10px 0 18px;z-index:20}.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#8a94a6;cursor:pointer;border:none;background:none}.nav-item.active{color:#0a1f44}.nav-item span{font-size:22px}
 #lockScreen{position:fixed;inset:0;background:linear-gradient(180deg,#0a1f44 0%,#0f2f66 100%);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;padding:30px}
 .lock-logo{width:80px;height:80px;background:white;border-radius:20px;display:flex;align-items:center;justify-content:center;color:#0a1f44;font-weight:800;font-size:32px;border:3px solid #c9a227;margin-bottom:20px}
@@ -190,10 +199,21 @@ body.dark .tx-list{background:#141d35}
 <div class="section-title" style="padding-left:0">Your Cards</div>
 <div id="frozenBanner"></div>
 <div class="card-view" id="cardView">
-<div style="opacity:.7;font-size:12px">LIBERTY TRUST • BUSINESS PLATINUM</div>
+<div class="card-content">
+<svg class="card-contactless" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+<path d="M6 16c3-4 3-8 0-12" stroke-opacity=".9"/>
+<path d="M10 18c4-5 4-11 0-16" stroke-opacity=".6"/>
+<path d="M14 20c5-6 5-14 0-20" stroke-opacity=".35"/>
+</svg>
+<div style="opacity:.75;font-size:11px;letter-spacing:2px;font-weight:600">LIBERTY TRUST • BUSINESS PLATINUM</div>
 <div class="card-chip"></div>
-<div style="margin-top:24px;font-size:20px;letter-spacing:3px">4582 92•• •••• <span id="cardLast4Card">1034</span></div>
-<div style="display:flex;justify-content:space-between;margin-top:28px"><span id="cardHolder">MALONE PETE</span><span>12/29</span></div>
+<div class="card-number">4582 92•• •••• <span id="cardLast4Card">1034</span></div>
+<div class="card-bottom-row">
+<div><div class="card-label">CARD HOLDER</div><div id="cardHolder" style="font-weight:700;letter-spacing:1px">MALONE PETE</div></div>
+<div style="text-align:right"><div class="card-label">VALID THRU</div><div style="font-weight:700">12/29</div></div>
+<div class="card-mark">LT</div>
+</div>
+</div>
 </div>
 <div class="sec-block">
 <div class="sec-label" style="margin:0 0 8px">Controls</div>
