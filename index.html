@@ -38,7 +38,7 @@ body.dark #searchInput{background:#0f1730;border:1.5px solid #253258;color:#fff}
 .header{background:white;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);position:sticky;top:0;z-index:10}
 .logo{width:44px;height:44px;background:#0a1f44;border:2px solid #c9a227;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#c9a227;font-weight:800;font-size:18px}
 .bank-name{font-weight:800;font-size:15px}.bank-sub{font-size:10px;letter-spacing:2px;color:#c9a227;font-weight:700;margin-top:1px}
-.sync-status{margin-left:auto;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:#e6f4ea;color:#1a7f37}
+.sync-status{margin-left:auto;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:#e6f4ea;color:#1a7f37;transition:opacity .5s ease}
 .sync-status.err{background:#fdecea;color:#b42318}
 .main-card{background:linear-gradient(135deg,#0a1f44 0%,#1a4a8a 100%);margin:14px 14px 0;border-radius:20px;padding:20px;color:white;position:relative;overflow:hidden}
 .welcome{opacity:.7;font-size:13px}.name{font-size:26px;font-weight:800;margin:6px 0 4px}.acct{opacity:.65;font-size:14px}
@@ -506,7 +506,20 @@ function nav(id, el){ document.querySelectorAll('.page').forEach(p=>p.classList.
 function copyText(t){ try{ navigator.clipboard.writeText(t); toast('Copied '+t); }catch(e){ alert('Copied: '+t); } }
 
 /* ------------------- RENDER HOME */
-function updateSyncBadge(){ const s=document.getElementById('syncStatus'); if(!s) return; if(_syncError){ s.textContent='⚠️ Cloud: '+_syncError.slice(0,40); s.className='sync-status err'; } else { s.textContent='✅ Synced'; s.className='sync-status'; } }
+function updateSyncBadge(){
+  const s=document.getElementById('syncStatus'); if(!s) return;
+  clearTimeout(window._syncBadgeTimer);
+  if(_syncError){
+    s.textContent='⚠️ Cloud: '+_syncError.slice(0,40);
+    s.className='sync-status err';
+    s.style.opacity='1';
+  } else {
+    s.textContent='✅ Synced';
+    s.className='sync-status';
+    s.style.opacity='1';
+    window._syncBadgeTimer=setTimeout(()=>{ s.style.opacity='0'; }, 2000);
+  }
+}
 function render(){
   document.getElementById('bal').textContent=hidden?'••••••••':fmt(balance);
   try{ document.getElementById('cardLast4').textContent=card.last4||'1034'; document.getElementById('cardLast4Card').textContent=card.last4||'1034'; }catch(e){}
