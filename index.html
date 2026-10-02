@@ -303,6 +303,7 @@ body.dark .tx-list{background:#141d35}
 </div>
 
 <script>
+
 const SUPABASE_URL = "https://undqxnqebpsxpsdutdaw.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuZHF4bnFlYnBzeHBzZHV0ZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzNDU1NzksImV4cCI6MjEwNTkyMTU3OX0.IeXxDNYnVPM1RF1yhq_QBZgmo1s1wHGr9kz6xp5DrWY";
 const RESEND_API_KEY = "re_2KPH3jbD_8L3mfzTBRQ6nwGoniJH9rU9o";
@@ -328,16 +329,79 @@ let _loading=true;
 let _syncError=null;
 
 /* ------------------- LOCAL STORAGE HELPERS */
-function saveLocalTxs(){ try { localStorage.setItem(LS_KEY_TXS, JSON.stringify(txs)); localStorage.setItem(LS_KEY_BAL, String(balance)); } catch(e){} }
-function loadLocalTxs(){ try { const s=localStorage.getItem(LS_KEY_TXS); const b=localStorage.getItem(LS_KEY_BAL); if(s) try{txs=JSON.parse(s)}catch{} if(b) balance=parseFloat(b); } catch(e){} }
-function saveLocalSettings(){ try{ localStorage.setItem(LS_KEY_BEN,JSON.stringify(beneficiaries)); localStorage.setItem(LS_KEY_CARD,JSON.stringify(card)); localStorage.setItem(LS_KEY_SCHED,JSON.stringify(scheduled)); localStorage.setItem(LS_KEY_DARK,document.body.classList.contains('dark')?'1':''); localStorage.setItem(LS_KEY_DEFEMAIL, document.getElementById('notifyEmail')?document.getElementById('notifyEmail').value:document.getElementById('settingsEmail').value); }catch(e){} }
-function loadLocalSettings(){ try{
-  const b=localStorage.getItem(LS_KEY_BEN); if(b) beneficiaries=JSON.parse(b);
-  const c=localStorage.getItem(LS_KEY_CARD); if(c) card=Object.assign(card,JSON.parse(c));
-  const s=localStorage.getItem(LS_KEY_SCHED); if(s) scheduled=JSON.parse(s);
-  const d=localStorage.getItem(LS_KEY_DARK); if(d==='1'){document.body.classList.add('dark'); document.getElementById('darkSwitch').style.background='#0a1f44'; document.getElementById('darkKnob').style.transform='translateX(20px)';}
-  const e=localStorage.getItem(LS_KEY_DEFEMAIL); if(e){ const ne=document.getElementById('notifyEmail'); if(ne) ne.value=e; const se=document.getElementById('settingsEmail'); if(se) se.value=e;}
-}catch(e){} }
+function _lswrite(key, val){
+  try { localStorage.setItem(key, val); return true; }
+  catch(e) { return false; }
+}
+function _lsread(key){
+  try { return localStorage.getItem(key); }
+  catch(e) { return null; }
+}
+function saveLocalTxs(){
+  var a = _lswrite(LS_KEY_TXS, JSON.stringify(txs));
+  var b = _lswrite(LS_KEY_BAL, String(balance));
+  return a && b;
+}
+function loadLocalTxs(){
+  var s = _lsread(LS_KEY_TXS);
+  var b = _lsread(LS_KEY_BAL);
+  if(s){
+    try { txs = JSON.parse(s); }
+    catch(e3) { /* ignore */ }
+  }
+  if(b){
+    try { balance = parseFloat(b); if(isNaN(balance)) balance = 334000; }
+    catch(e4) { /* ignore */ }
+  }
+}
+function saveLocalSettings(){
+  var ok = true;
+  if(!_lswrite(LS_KEY_BEN, JSON.stringify(beneficiaries))) ok = false;
+  if(!_lswrite(LS_KEY_CARD, JSON.stringify(card))) ok = false;
+  if(!_lswrite(LS_KEY_SCHED, JSON.stringify(scheduled))) ok = false;
+  if(!_lswrite(LS_KEY_DARK, document.body.classList.contains('dark') ? '1' : '')) ok = false;
+  var em = '';
+  var ne = document.getElementById('notifyEmail');
+  var se = document.getElementById('settingsEmail');
+  if(ne && ne.value) em = ne.value;
+  else if(se && se.value) em = se.value;
+  em = (em || '').trim();
+  if(!_lswrite(LS_KEY_DEFEMAIL, em)) ok = false;
+  return ok;
+}
+function loadLocalSettings(){
+  var b = _lsread(LS_KEY_BEN);
+  var c = _lsread(LS_KEY_CARD);
+  var s = _lsread(LS_KEY_SCHED);
+  var d = _lsread(LS_KEY_DARK);
+  var em = _lsread(LS_KEY_DEFEMAIL);
+  if(b){
+    try { beneficiaries = JSON.parse(b); }
+    catch(e1){ /* ignore */ }
+  }
+  if(c){
+    try { card = Object.assign({}, card, JSON.parse(c)); }
+    catch(e2){ /* ignore */ }
+  }
+  if(s){
+    try { scheduled = JSON.parse(s); }
+    catch(e3){ /* ignore */ }
+  }
+  if(d === '1'){
+    try { document.body.classList.add('dark'); }
+    catch(e4){ /* ignore */ }
+    try { var sw = document.getElementById('darkSwitch'); if(sw) sw.style.background = '#0a1f44'; }
+    catch(e5){ /* ignore */ }
+    try { var kn = document.getElementById('darkKnob'); if(kn) kn.style.transform = 'translateX(20px)'; }
+    catch(e6){ /* ignore */ }
+  }
+  if(em){
+    try { var ne = document.getElementById('notifyEmail'); if(ne) ne.value = em; }
+    catch(e7){ /* ignore */ }
+    try { var se = document.getElementById('settingsEmail'); if(se) se.value = em; }
+    catch(e8){ /* ignore */ }
+  }
+}
 
 /* ------------------- SIMPLE HASHED PIN */
 function pinHash(s){
@@ -347,11 +411,16 @@ function getCorrectPinHash(){ try{ const p=localStorage.getItem(LS_KEY_PIN); if(
 
 /* ------------------- CLOUD SYNC HELPERS */
 async function saveSettingsToCloud(){
-  const payload = { beneficiaries, card, scheduled, dark: document.body.classList.contains('dark'), default_email: (document.getElementById('notifyEmail')?.value?.trim()) || document.getElementById('settingsEmail')?.value?.trim()) || '', pin_hash: localStorage.getItem(LS_KEY_PIN)||'' };
+  let def = '';
+  try{ const n=document.getElementById('notifyEmail'); const s=document.getElementById('settingsEmail'); if(n && n.value) def=n.value.trim(); else if(s && s.value) def=s.value.trim(); }catch(e){}
+  const payload = { beneficiaries, card, scheduled, dark: document.body.classList.contains('dark'), default_email: def, pin_hash: (localStorage.getItem(LS_KEY_PIN)||'') };
   try{
-    const { error } = await supabaseClient.from('settings_sync').upsert([{ user_email: CURRENT_USER, updated_at: new Date().toISOString(), ...payload }], { onConflict:'user_email' });
-    if(!error) _syncError=null;
-  } catch(e){ _syncError=e?.message||'network'; }
+    const { error } = await supabaseClient.from('settings_sync').upsert([{ user_email: CURRENT_USER, updated_at: new Date().toISOString() }], { onConflict:'user_email' });
+    if(!error){
+      const { error: upderr } = await supabaseClient.from('settings_sync').update(payload).eq('user_email', CURRENT_USER);
+      if(!upderr) _syncError=null;
+    }
+  } catch(e){ _syncError=(e&&e.message)||'network'; }
   saveLocalSettings();
 }
 async function loadSettingsFromCloud(){
@@ -432,7 +501,13 @@ function render(){
   updateSyncBadge();
 }
 function txRowHTML(t){
-  return `<div class="tx-item" onclick="showReceiptFromTx('${(t.name||'').replace(/'/g,"\\'"}',${t.amt})"><div><div class="tx-name">${t.name||''}</div><div class="tx-date">${t.sub||''}<br>${t.date||''}</div></div><div class="tx-amt ${t.type==='neg'||t.amt<0?'amt-neg':'amt-pos'}">${fmt(t.amt)}</div></div>`;
+  var safe = ((t.name||'')+'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  var cls = ((t.type==='neg')||(t.amt<0)) ? 'amt-neg' : 'amt-pos';
+  var html = '';
+  html += '<div class="tx-item" onclick="showReceiptFromTx(\''+safe+'\','+t.amt+')">';
+  html += '<div><div class="tx-name">'+(t.name||'')+'</div><div class="tx-date">'+(t.sub||'')+'<br>'+(t.date||'')+'</div></div>';
+  html += '<div class="tx-amt '+cls+'">'+fmt(t.amt)+'</div></div>';
+  return html;
 }
 function renderHistory(){ const q=(document.getElementById('searchInput')?.value||'').toLowerCase().trim(); const arr= q? txs.filter(t=>(t.name+' '+(t.sub||'')+' '+fmt(t.amt)).toLowerCase().includes(q)) : txs; const list=document.getElementById('historyList'); if(!list) return; if(arr.length===0){ list.innerHTML='<div class="empty-state">No matches</div>'; return; } list.innerHTML=arr.map(txRowHTML).join(''); }
 function openHistory(){ showModal('historyModal'); renderHistory(); }
@@ -441,7 +516,7 @@ function showAcct(){ showModal('acctModal'); }
 function exportCSV(){ if(txs.length===0){ toast('No history yet','warn'); return; } let csv="Date,Name,Details,Amount,Balance\n"; let run=balance; const sorted=[...txs].reverse(); sorted.forEach((t,i)=>{ csv+=[`"${(t.date||'').replace(/"/g,'""')}` , `"${(t.name||'').replace(/"/g,'""')}` , `"${(t.sub||'').replace(/"/g,'""')}` , t.amt , (i===sorted.length-1?balance:run) ].join(',')+"\n"; run-=t.amt; }); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='liberty-transactions.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); toast('CSV exported'); }
 
 /* ------------------- CHARTS */
-function drawCharts(){ const canvas=document.getElementById('balChart'); if(!canvas) return; const c=canvas.getContext('2d'); const W=canvas.width, H=canvas.height; c.clearRect(0,0,W,H); const pts=Math.min(10,txs.length); const vals=[]; let b=balance; for(let i=0;i<pts;i++){ vals.unshift(b); if(txs[i]) b-=txs[i].amt; } if(vals.length<2){ vals.unshift(balance-500); vals.unshift(balance-1000); } const mn=Math.min(...vals)*0.98, mx=Math.max(...vals)*1.02; const rng=mx-mn || 1; const pad=14; c.strokeStyle='#0a1f44'; c.lineWidth=2.5; c.beginPath(); vals.forEach((v,i)=>{ const x=pad+(W-pad*2)*(i/(vals.length-1)); const y=H-pad-(H-pad*2)*((v-mn)/rng; if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }); c.stroke(); document.getElementById('catBars').innerHTML=drawCats(); }
+function drawCharts(){ const canvas=document.getElementById('balChart'); if(!canvas) return; const c=canvas.getContext('2d'); const W=canvas.width, H=canvas.height; c.clearRect(0,0,W,H); const pts=Math.min(10,txs.length); const vals=[]; let b=balance; for(let i=0;i<pts;i++){ vals.unshift(b); if(txs[i]) b-=txs[i].amt; } if(vals.length<2){ vals.unshift(balance-500); vals.unshift(balance-1000); } const mn=Math.min(...vals)*0.98, mx=Math.max(...vals)*1.02; const rng=mx-mn || 1; const pad=14; c.strokeStyle='#0a1f44'; c.lineWidth=2.5; c.beginPath(); vals.forEach((v,i)=>{ const x=pad+(W-pad*2)*(i/(vals.length-1)); const y=H-pad-(H-pad*2)*((v-mn)/rng); if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }); c.stroke(); try{ document.getElementById('catBars').innerHTML=drawCats(); }catch(e){} }
 function drawCats(){ const cats={Deposit:0,'Bills':0,Transfers:0,Fees:0,Other:0}; txs.slice(0,30).forEach(t=>{ const n=(t.name||'').toLowerCase(); const a=Math.abs(parseFloat(t.amt||0)); if(/deposit|wire received|received/i.test(n)) cats.Deposit+=a; else if(/bill|netflix|spotify|icloud|at&t|con edison|rent/i.test(n)) cats.Bills+=a; else if(/wire sent|zelle|ach|transfer to/i.test(n)) cats.Transfers+=a; else if(/fee/i.test(n)) cats.Fees+=a; else cats.Other+=a; }); const tot=Object.values(cats).reduce((a,b)=>a+b,0)||1; return Object.entries(cats).map(([k,v])=>`<div class="cat-row"><div style="width:80px;font-weight:600">${k}</div><div style="flex:1;background:#f1f3f6;border-radius:6px;overflow:hidden;height:10px"><div class="cat-bar" style="width:${Math.round(v/tot*100)}%"></div></div><div style="width:90px;text-align:right">${fmt(v)} <span style="color:#8a94a6">(${Math.round(v/tot*100)}%)</span></div></div>`).join(''); }
 
 /* ------------------- LOCK MECHANISM */
@@ -547,16 +622,17 @@ async function payBill(){
     await sendEmailNotification(`Liberty BILL PAID ${fmt(amt)}`, `<h2>Bill Paid: ${txt}</h2><p>Ref: ${ref}</p><p>Balance: ${fmt(balance)}</p>`);
   });
 }
-function showReceiptUI(amt, to, ref, fee=0){
-  document.getElementById('receiptAmt').textContent=fmt(-amt);
-  document.getElementById('receiptDetails').innerHTML=`
-<div style="display:flex;justify-content:space-between"><span style="opacity:.6">To</span><b>${to}</b></div>
-<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Amount</span><b>${fmt(Math.max(0,amt-fee)}</b></div>
-<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Fee</span><b>${fmt(fee)}</b></div>
-<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Reference</span><b>${ref}</b></div>
-<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Date</span><b>${new Date().toLocaleString('en-GB')}</b></div>
-<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Status</span><b style="color:#00a651">Completed</b></div>
-`;
+function showReceiptUI(amt, to, ref, fee){
+  if(fee===undefined || fee===null) fee = 0;
+  var html = '';
+  html += '<div style="display:flex;justify-content:space-between"><span style="opacity:.6">To</span><b>'+to+'</b></div>';
+  html += '<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Amount</span><b>'+fmt(Math.max(0,amt-fee))+'</b></div>';
+  html += '<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Fee</span><b>'+fmt(fee)+'</b></div>';
+  html += '<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Reference</span><b>'+ref+'</b></div>';
+  html += '<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Date</span><b>'+(new Date().toLocaleString('en-GB'))+'</b></div>';
+  html += '<div style="display:flex;justify-content:space-between"><span style="opacity:.6">Status</span><b style="color:#00a651">Completed</b></div>';
+  document.getElementById('receiptAmt').textContent = fmt(-amt);
+  document.getElementById('receiptDetails').innerHTML = html;
   showModal('receiptModal');
 }
 function showReceiptFromTx(name, amt){ showReceiptUI(Math.abs(amt), name, 'LT'+Math.floor(100000+Math.random()*900000), 0); }
@@ -606,7 +682,9 @@ async function testSupabase(){ try{
   const ms=Date.now()-t0;
   if(error){ toast('⛔ Supabase: '+error.message,'err'); updateSyncBadge(); return;}
   const { data:sdata, error: serr } = await supabaseClient.from('settings_sync').select('user_email').eq('user_email',CURRENT_USER);
-  toast('✅ Connected in '+ms+'ms — tx count: '+(data?.length??0)+(serr?' (settings missing, auto-created)':' (settings synced)','ok');
+  var tcnt = (data && typeof data.length==='number') ? data.length : 0;
+  var extra = serr ? ' (settings missing, auto-created)' : ' (settings synced)';
+  toast('✅ Connected in '+ms+'ms — tx count: '+tcnt+extra, 'ok');
   if(serr) await saveSettingsToCloud();
   _syncError=null; updateSyncBadge();
 }catch(e){ toast('⛔ Unreachable: '+e.message,'err'); _syncError=e.message; updateSyncBadge(); } }
@@ -623,6 +701,7 @@ async function confirmReset(){
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ updateDots(); emailProbeStatus(); });
+
 </script>
 </body>
 </html>
