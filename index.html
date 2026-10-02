@@ -642,14 +642,18 @@ function getNotifyEmail(){
   if(transferField && transferField.includes('@')) home = transferField;
   return home.trim();
 }
-async function sendEmailViaNetlify(to, subject, html){
-  const r=await fetch('/.netlify/functions/sendEmail',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to,subject,html})});
-  const txt=await r.text(); let data={}; try{data=JSON.parse(txt);}catch(e){data={body:txt};}
-  return {ok:r.ok,status:r.status,body:data};
-}
-async function sendEmailDirect(to, subject, html){
-  const r=await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':`Bearer ${RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from:"Liberty Trust <onboarding@resend.dev>",to:[to],subject,html})});
-  return {ok:r.ok,status:r.status,body:await r.json().catch(()=>({}))};
+async function sendEmailNotification(subject, detailsHtml){
+  let target = getNotifyEmail();
+  if(!target){ console.log('No email entered, skipping'); return null; }
+  try{
+    const { data, error } = await supabaseClient.functions.invoke('send-email', {
+      body: { to: target, subject, html: detailsHtml }
+    });
+    if(error){ console.error('Email send err:', error); toast('Email send err: '+error.message,'err'); return null; }
+    console.log('Email result:', data);
+    toast('📨 Alert sent to '+target,'ok');
+    return data;
+  } catch(e){ console.error('Email send err:', e); toast('Email send err: '+e.message,'err'); return null; }
 }
 async function emailProbeStatus(){ const el=document.getElementById('emailSmall'); if(el) el.textContent='Status: ☁️ Supabase Edge Function'; }
 async function testEmailSend(){ const to=getNotifyEmail(); if(!to){ toast('Enter your email first (Home → Email box)','warn'); return;} const r=await sendEmailNotification('Liberty Trust — Test', `<h1>✅ Email works!</h1><p>If you see this, notifications are configured correctly.</p><p>Time: ${new Date().toLocaleString()}</p>`); toast(r?.ok? '✅ Last send OK — check inbox/spam':'Email failed: HTTP '+(r?.status||'X'), r?.ok?'ok':'err'); }
