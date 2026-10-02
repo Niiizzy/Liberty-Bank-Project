@@ -130,7 +130,7 @@ body.dark .tx-list{background:#141d35}
 <input id="notifyEmail" type="email" placeholder="📧 Email to receive alerts — type and tap away to save" style="width:100%;padding:14px;margin:0 0 10px;border:1.5px solid #e1e6ef;border-radius:12px;font-size:15px;background:white">
 <div class="input-wrap"><input id="amountInput" type="number" placeholder="Amount e.g. 5000"></div>
 </div>
-<div class="btn-row"><button class="btn btn-dep" onclick="doDeposit()">+ Deposit</button><button class="btn btn-wd" onclick="doWithdraw()">- Withdraw</button></div>
+<div class="btn-row"><button class="btn btn-dep" onclick="doDeposit()">+ Deposit</button><button class="btn btn-wd" onclick="nav('transfer')">↗ Transfer</button></div>
 
 <div class="chart-box">
 <div style="font-weight:700;font-size:15px;margin-bottom:10px">Balance trend (last 10 txns)</div>
@@ -565,21 +565,6 @@ async function doDeposit(){
     await saveTxToCloud(tx);
     showReceiptUI(v, "Wire Received", ref, 0);
     await sendEmailNotification(`Liberty CREDIT ${fmt(v)}`, `<h2>CREDIT ${fmt(v)}</h2><p>Ref: ${ref}</p><p>New Balance: ${fmt(balance)}</p><p>Date: ${new Date().toLocaleString()}</p>`);
-  });
-}
-async function doWithdraw(){
-  let v=parseFloat(document.getElementById('amountInput').value);
-  if(!v||v<=0){ toast('Enter amount','warn'); return; }
-  if(v>balance){ toast('Insufficient','err'); return; }
-  if(card.frozen){ toast('Card is frozen — unfreeze first','err'); return; }
-  let fee=v>10000?35:v>1000?15:0;
-  confirmAction('Confirm withdrawal?',`<div>Amount: <b>${fmt(v)}</b><br>Fee: <b>$${fee}.00</b><br>Total: <b>${fmt(v+fee)}</b><br>Balance after: <b>${fmt(balance-v-fee)}</b></div>`,async()=>{
-    let ref="LT"+Math.floor(100000+Math.random()*900000);
-    balance-=(v+fee); let tx={name: v>10000?"Wire Sent - Business Transfer":"ACH Transfer Out", sub: `Ref: ${ref} • Fee $${fee}`, amt:-(v+fee), type:"neg", date:new Date().toLocaleString('en-GB')};
-    txs.unshift(tx); document.getElementById('amountInput').value=""; render(); saveLocalTxs();
-    await saveTxToCloud(tx);
-    showReceiptUI(v+fee, "Wire Sent", ref, fee);
-    await sendEmailNotification(`Liberty DEBIT ${fmt(v+fee)}`, `<h2>DEBIT ${fmt(v+fee)}</h2><p>Ref: ${ref}</p><p>Balance: ${fmt(balance)}</p>`);
   });
 }
 async function sendMoney(){
